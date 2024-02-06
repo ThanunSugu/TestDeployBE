@@ -17,13 +17,38 @@ webServer.use(cors());
 webServer.use(express.json());
 
 // HEALTH DATA
-const COMPANY_KEY = ["name", "taxId"];
+// const COMPANY_KEY = ["name", "taxId"];
+const USERS_KEY = ["userId", "email", "password"];
 
 // server routes
 
 webServer.get("/", (req, res) => {
   res.send("Hello World");
 });
+
+/////// user-start
+webServer.get("/users", async (req, res) => {
+  const data = await databaseClient.db().collection("users").find({}).toArray();
+  res.json(data);
+});
+
+//post users
+webServer.post("/users", async (req, res) => {
+  const body = req.body;
+
+  // check missing fields here
+
+  // create data
+
+  const data = {
+    ...body,
+    // employees: [],
+  };
+  await databaseClient.db().collection("users").insertOne(data);
+  res.send("Create User Successfully");
+});
+
+///////users-end
 
 webServer.get("/company", async (req, res) => {
   const data = await databaseClient
