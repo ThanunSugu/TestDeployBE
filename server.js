@@ -160,6 +160,35 @@ webServer.patch("/users/:userId", async (req, res) => {
   }
 });
 
+//del
+webServer.delete("/users/:userId", async (req, res) => {
+  try {
+    // Extract userId from the request parameters
+    const { userId } = req.params;
+
+    // Convert string ID to ObjectId for MongoDB
+    const objectId = new ObjectId(userId);
+
+    // Perform the deletion operation
+    const deleteResult = await databaseClient
+      .db()
+      .collection("users")
+      .deleteOne({ _id: objectId });
+
+    // Check if the user was found and deleted
+    if (deleteResult.deletedCount === 0) {
+      return res.status(404).send("User not found");
+    }
+
+    // Respond with a success message
+    res.status(200).send("User deleted successfully");
+  } catch (error) {
+    // If an error occurs, log it and return an error message
+    console.error(error);
+    res.status(500).send("An error occurred while deleting the user");
+  }
+});
+
 /////users-end/////////////////////////////////////////////////////////////
 
 webServer.get("/company", async (req, res) => {
