@@ -4,10 +4,17 @@ import express from "express";
 import multer from "multer";
 import { ObjectId } from "mongodb";
 import databaseClient from "./services/database.mjs";
+import bcrypt from "bcrypt";
 import { checkMissingField } from "./utils/requestUtils.js";
+import { createJwt } from "./middlewares/createJwt.js";
+import "dotenv/config";
 
 const HOSTNAME = process.env.SERVER_IP || "127.0.0.1";
 const PORT = process.env.SERVER_PORT || 3000;
+
+const SALT = 10;
+const SIGNUP_DATA_KEYS = ["email", "password"];
+const LOGIN_DATA_KEYS = ["email", "password"];
 
 // setting initial configuration for upload file, web server (express), and cors
 const upload = multer({ dest: "uploads/" });
@@ -47,79 +54,6 @@ webServer.post("/users", async (req, res) => {
   await databaseClient.db().collection("users").insertOne(data);
   res.send("Create User Successfully");
 });
-
-// //patch users
-// webServer.patch("/users/:userId", (req, res) => {
-//   // const id = parseInt(req.params.userId, 10);
-
-//   // Read request body and store it in `attributes` variable
-//   const attributes = req.body;
-
-//   // Update todo with `updateTodo`
-//   const updatedUser = updateUser(id, attributes);
-
-//   const updateUser = (id, attributes) => {
-//     const user = findUser(id);
-//     if (!todo) {
-//       return null;
-//     }
-
-//     /**
-//      * Bonus
-//      *
-//      * This code has a bug where caller can update the `id` of the todo.
-//      * In real world, we don't want to allow the caller to update the `id`.
-//      *
-//      * Fix the code so that the caller can't update todo's id. Or, even if they
-//      * try to update the id, it will be ignored.
-//      */
-//     const updatedUser = (userDatabase[id] = { ...todo, ...attributes });
-
-//     return updatedUser;
-//   };
-
-//   // Return the updated todo
-//   res.status(200).json({ data: updatedUser });
-
-//   throw new Error("Not implemented");
-// });
-
-//2 patch good to fix 1 attribute ******
-// webServer.patch("/users/:userId", async (req, res) => {
-//   try {
-//     // Extract userId from the request parameters
-//     const { userId } = req.params;
-
-//     // Extract email from the request body
-//     const { email } = req.body;
-
-//     // Check if the email was provided
-//     if (!email) {
-//       return res.status(400).send("Email is required");
-//     }
-
-//     // Convert string ID to ObjectId
-//     const objectId = new ObjectId(userId);
-
-//     // Perform the update operation
-//     const updateResult = await databaseClient
-//       .db()
-//       .collection("users")
-//       .updateOne({ _id: objectId }, { $set: { email: email } });
-
-//     // Check if the user was found and updated
-//     if (updateResult.matchedCount === 0) {
-//       return res.status(404).send("User not found");
-//     }
-
-//     // Respond with a success message
-//     res.status(200).send("User email updated successfully");
-//   } catch (error) {
-//     // If an error occurs, log it and return an error message
-//     console.error(error);
-//     res.status(500).send("An error occurred while updating the user's email");
-//   }
-// });
 
 //3 patch good to fix MAny attributes ******
 
@@ -190,6 +124,67 @@ webServer.delete("/users/:userId", async (req, res) => {
 });
 
 /////users-end/////////////////////////////////////////////////////////////
+///////userAdmin//////////////////////////////////////////////////////////
+/////signup
+webServer.post("/adminUser", async (req, res) => {
+  let body = req.body;
+  const [isBodyChecked, missingFields] = checkMissingField(
+    SIGNUP_DATA_KEYS,
+    body
+  );
+  const existingAdminUser = await databaseClient
+    .db()
+    .collection("adminUser")
+    .findOne({ email: body.email });
+  if (existingAdminUser) {
+    res.status(400).send("already exists");
+    return;
+  }
+  if (!isBodyChecked) {
+    res.status(400).send(`Missing Fields: ${"".concat(missingFields)}`);
+    return;
+  }
+
+  const saltRound = await bcrypt.genSalt(SALT);
+  body["password"] = await bcrypt.hash(body["password"], saltRound);
+
+  const result = await databaseClient
+    .db()
+    .collection("adminUser")
+    .insertOne(body);
+  const token = createJwt(body.email);
+  res.status(201).json({ token, email: body.email, userId: result.insertedId });
+});
+
+//////login
+webServer.post("/adminLogin", async (req, res) => {
+  let body = req.body;
+  const [isBodyChecked, missingFields] = checkMissingField(
+    LOGIN_DATA_KEYS,
+    body
+  );
+  if (!isBodyChecked) {
+    res.status(400).send(`Missing Fields: ${"".concat(missingFields)}`);
+    return;
+  }
+  const user = await databaseClient
+    .db()
+    .collection("adminUser")
+    .findOne({ email: body.email });
+  if (user === null) {
+    res.status(400).send(`User or Password not found`);
+    return;
+  }
+  if (!bcrypt.compareSync(body.password, user.password)) {
+    res.status(400).send("User or Password not found");
+    return;
+  }
+
+  const token = createJwt(user.email);
+  res.status(200).json({ token, message: `Your Login ${user.email}` });
+});
+
+///////////////////////////////////////////////////////////////////////////////
 
 webServer.get("/company", async (req, res) => {
   const data = await databaseClient
