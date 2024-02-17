@@ -30,12 +30,12 @@ const USERS_KEY = ["_id", "email", "password"];
 
 // server routes
 
-webServer.get("/", auth, (req, res) => {
+webServer.get("/", (req, res) => {
   res.send("Hello World Admin BE");
 });
 
 /////// user-start
-webServer.get("/users", auth, async (req, res) => {
+webServer.get("/users", async (req, res) => {
   const data = await databaseClient.db().collection("users").find({}).toArray();
   res.json(data);
 });
