@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 import { checkMissingField } from "./utils/requestUtils.js";
 import { createJwt } from "./middlewares/createJwt.js";
 import "dotenv/config";
+import { auth } from "./middlewares/auth.js";
 
 const HOSTNAME = process.env.SERVER_IP || "127.0.0.1";
 const PORT = process.env.SERVER_PORT || 3000;
@@ -29,12 +30,12 @@ const USERS_KEY = ["_id", "email", "password"];
 
 // server routes
 
-webServer.get("/", (req, res) => {
+webServer.get("/", auth, (req, res) => {
   res.send("Hello World Admin BE");
 });
 
 /////// user-start
-webServer.get("/users", async (req, res) => {
+webServer.get("/users", auth, async (req, res) => {
   const data = await databaseClient.db().collection("users").find({}).toArray();
   res.json(data);
 });
@@ -124,6 +125,7 @@ webServer.delete("/users/:userId", async (req, res) => {
 });
 
 /////users-end/////////////////////////////////////////////////////////////
+
 ///////userAdmin//////////////////////////////////////////////////////////
 /////signup
 webServer.post("/adminuser", async (req, res) => {
