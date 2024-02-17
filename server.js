@@ -126,7 +126,7 @@ webServer.delete("/users/:userId", async (req, res) => {
 /////users-end/////////////////////////////////////////////////////////////
 ///////userAdmin//////////////////////////////////////////////////////////
 /////signup
-webServer.post("/adminUser", async (req, res) => {
+webServer.post("/adminuser", async (req, res) => {
   let body = req.body;
   const [isBodyChecked, missingFields] = checkMissingField(
     SIGNUP_DATA_KEYS,
@@ -157,7 +157,7 @@ webServer.post("/adminUser", async (req, res) => {
 });
 
 //////login
-webServer.post("/adminLogin", async (req, res) => {
+webServer.post("/adminlogin", async (req, res) => {
   let body = req.body;
   const [isBodyChecked, missingFields] = checkMissingField(
     LOGIN_DATA_KEYS,
