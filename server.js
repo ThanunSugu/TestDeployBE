@@ -278,6 +278,97 @@ webServer.delete("/posts/:userId", async (req, res) => {
   }
 });
 ///////////////////////////////////////////////////////////////////////////
+///////////lists///
+///get
+webServer.get("/lists", async (req, res) => {
+  const data = await databaseClient.db().collection("lists").find({}).toArray();
+  res.json(data);
+});
+
+//post posts
+webServer.post("/lists", async (req, res) => {
+  const body = req.body;
+
+  // check missing fields here
+
+  // create data
+
+  const data = {
+    ...body,
+    // employees: [],
+  };
+  await databaseClient.db().collection("lists").insertOne(data);
+  res.send("Create Lists Successfully");
+});
+
+// POStS -patch  ******
+
+webServer.patch("/lists/:userId", async (req, res) => {
+  try {
+    // Extract userId from the request parameters
+    const { userId } = req.params;
+
+    // Extract attributes to update from the request body
+    // Destructuring with the rest operator to exclude _id from being updated
+    const { _id, ...attributesToUpdate } = req.body;
+
+    // Check if there are attributes to update
+    if (Object.keys(attributesToUpdate).length === 0) {
+      return res.status(400).send("No fields to update");
+    }
+
+    // Convert string ID to ObjectId
+    const objectId = new ObjectId(userId);
+
+    // Perform the update operation
+    const updateResult = await databaseClient
+      .db()
+      .collection("lists")
+      .updateOne({ _id: objectId }, { $set: attributesToUpdate });
+
+    // Check if the user was found and updated
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).send("List not found");
+    }
+
+    // Respond with a success message
+    res.status(200).send("List  updated successfully");
+  } catch (error) {
+    // If an error occurs, log it and return an error message
+    console.error(error);
+    res.status(500).send("An error occurred while updating the list");
+  }
+});
+//POSTS del
+webServer.delete("/lists/:userId", async (req, res) => {
+  try {
+    // Extract userId from the request parameters
+    const { userId } = req.params;
+
+    // Convert string ID to ObjectId for MongoDB
+    const objectId = new ObjectId(userId);
+
+    // Perform the deletion operation
+    const deleteResult = await databaseClient
+      .db()
+      .collection("lists")
+      .deleteOne({ _id: objectId });
+
+    // Check if the user was found and deleted
+    if (deleteResult.deletedCount === 0) {
+      return res.status(404).send("List not found");
+    }
+
+    // Respond with a success message
+    res.status(200).send("List deleted successfully");
+  } catch (error) {
+    // If an error occurs, log it and return an error message
+    console.error(error);
+    res.status(500).send("An error occurred while deleting the list");
+  }
+});
+
+///////////////////////////////////////////////////////////////////
 
 webServer.get("/company", async (req, res) => {
   const data = await databaseClient
